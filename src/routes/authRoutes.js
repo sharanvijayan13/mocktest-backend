@@ -30,23 +30,15 @@ router.get(
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    failureRedirect: "http://localhost:3000/login?error=google-auth-failed",
+    failureRedirect: `${process.env.CLIENT_URL}/login?error=google-auth-failed`,
     session: false
   }),
   (req, res) => {
     // Generate JWT token
     const token = generateToken(req.user.id);
     
-    // Set HTTP-only cookie with the token
-    res.cookie('jwt', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-    });
-
-    // Redirect to frontend with success
-    res.redirect('http://localhost:3000/profile');
+    // Redirect to frontend with token as URL parameter
+    res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
   }
 );
 
