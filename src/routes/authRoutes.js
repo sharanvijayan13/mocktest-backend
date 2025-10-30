@@ -30,7 +30,7 @@ router.get(
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    failureRedirect: `${process.env.CLIENT_URL}/login?error=google-auth-failed`,
+    failureRedirect: "http://localhost:3000/login?error=google-auth-failed",
     session: false
   }),
   (req, res) => {
@@ -46,7 +46,7 @@ router.get(
     });
 
     // Redirect to frontend with success
-    res.redirect(`${process.env.CLIENT_URL}/profile`);
+    res.redirect('http://localhost:3000/profile');
   }
 );
 
