@@ -12,6 +12,11 @@ const router = express.Router();
 
 router.get("/posts", getAllPosts);
 router.get("/posts/me", protect, getMyPosts);
+router.get("/drafts/me", protect, (req, res, next) => {
+  console.log('📥 Drafts endpoint hit');
+  req.query.drafts_only = 'true';
+  getMyPosts(req, res, next);
+});
 router.post("/posts", protect, createPost);
 router.put("/posts/:id", protect, updatePost);
 router.delete("/posts/:id", protect, deletePost);

@@ -19,12 +19,21 @@ export const getAllPosts = async (_req, res) => {
 
 export const getMyPosts = async (req, res) => {
   const user_id = req.user.id;
+  const { drafts_only } = req.query;
+  
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("posts")
-      .select(`id, title, body, user_id, created_at, updated_at`)
-      .eq("user_id", user_id)
-      .order("created_at", { ascending: false });
+      .select(`id, title, body, user_id, created_at, updated_at, is_draft`)
+      .eq("user_id", user_id);
+
+    if (drafts_only === 'true') {
+      query = query.eq("is_draft", true);
+    } else {
+      query = query.eq("is_draft", false);
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error) throw error;
     res.json(data);
@@ -34,30 +43,42 @@ export const getMyPosts = async (req, res) => {
 };
 
 export const createPost = async (req, res) => {
-  const { title, body } = req.body;
+  const { title, body, is_draft = false } = req.body;
   const user_id = req.user.id;
+
+  // Debug logging
+  console.log('📝 Creating post with data:', { title, body, is_draft, user_id });
 
   if (!title || !body) {
     return res.status(400).json({ message: "Please provide title and body" });
   }
 
   try {
+    const insertData = { title, body, user_id, is_draft };
+    console.log('📤 Inserting to database:', insertData);
+
     const { data, error } = await supabase
       .from("posts")
-      .insert([{ title, body, user_id }])
+      .insert([insertData])
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Database error:', error);
+      throw error;
+    }
+
+    console.log('✅ Post created successfully:', data);
     res.status(201).json(data);
   } catch (error) {
+    console.error('❌ Create post error:', error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
 export const updatePost = async (req, res) => {
   const { id } = req.params;
-  const { title, body } = req.body;
+  const { title, body, is_draft } = req.body;
   const user_id = req.user.id;
 
   try {
@@ -77,9 +98,14 @@ export const updatePost = async (req, res) => {
         .json({ message: "User not authorized to update this post" });
     }
 
+    const updateData = { title, body };
+    if (is_draft !== undefined) {
+      updateData.is_draft = is_draft;
+    }
+
     const { data, error } = await supabase
       .from("posts")
-      .update({ title, body })
+      .update(updateData)
       .eq("id", id)
       .select()
       .single();
