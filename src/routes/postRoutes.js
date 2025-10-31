@@ -17,6 +17,11 @@ router.get("/drafts/me", protect, (req, res, next) => {
   req.query.drafts_only = 'true';
   getMyPosts(req, res, next);
 });
+router.get("/private/me", protect, (req, res, next) => {
+  console.log('📥 Private notes endpoint hit');
+  req.query.private_only = 'true';
+  getMyPosts(req, res, next);
+});
 router.post("/posts", protect, createPost);
 router.put("/posts/:id", protect, updatePost);
 router.delete("/posts/:id", protect, deletePost);

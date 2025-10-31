@@ -2,13 +2,23 @@ import { supabase } from "../config/supabaseClient.js";
 
 export const getAllPosts = async (_req, res) => {
   try {
-    const { data, error } = await supabase.from("posts").select(`
-                id,
-                title,
-                body,
-                user_id,
-                users ( name, email )
-            `);
+    // Only return public posts (not drafts and not private)
+    const { data, error } = await supabase
+      .from("posts")
+      .select(`
+        id,
+        title,
+        body,
+        user_id,
+        created_at,
+        updated_at,
+        labels,
+        is_private,
+        users ( name, email )
+      `)
+      .eq("is_draft", false)
+      .eq("is_private", false)
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     res.json(data);
@@ -19,18 +29,21 @@ export const getAllPosts = async (_req, res) => {
 
 export const getMyPosts = async (req, res) => {
   const user_id = req.user.id;
-  const { drafts_only } = req.query;
+  const { drafts_only, private_only } = req.query;
   
   try {
     let query = supabase
       .from("posts")
-      .select(`id, title, body, user_id, created_at, updated_at, is_draft, labels`)
+      .select(`id, title, body, user_id, created_at, updated_at, is_draft, is_private, labels`)
       .eq("user_id", user_id);
 
     if (drafts_only === 'true') {
       query = query.eq("is_draft", true);
+    } else if (private_only === 'true') {
+      query = query.eq("is_draft", false).eq("is_private", true);
     } else {
-      query = query.eq("is_draft", false);
+      // Public notes (published and not private)
+      query = query.eq("is_draft", false).eq("is_private", false);
     }
 
     const { data, error } = await query.order("created_at", { ascending: false });
@@ -43,11 +56,11 @@ export const getMyPosts = async (req, res) => {
 };
 
 export const createPost = async (req, res) => {
-  const { title, body, is_draft = false, labels = [] } = req.body;
+  const { title, body, is_draft = false, is_private = false, labels = [] } = req.body;
   const user_id = req.user.id;
 
   // Debug logging
-  console.log('📝 Creating post with data:', { title, body, is_draft, labels, user_id });
+  console.log('📝 Creating post with data:', { title, body, is_draft, is_private, labels, user_id });
   console.log('📝 Labels type:', typeof labels, 'Labels length:', labels?.length);
 
   if (!title || !body) {
@@ -55,7 +68,7 @@ export const createPost = async (req, res) => {
   }
 
   try {
-    const insertData = { title, body, user_id, is_draft, labels };
+    const insertData = { title, body, user_id, is_draft, is_private, labels };
     console.log('📤 Inserting to database:', insertData);
 
     const { data, error } = await supabase
@@ -79,7 +92,7 @@ export const createPost = async (req, res) => {
 
 export const updatePost = async (req, res) => {
   const { id } = req.params;
-  const { title, body, is_draft, labels } = req.body;
+  const { title, body, is_draft, is_private, labels } = req.body;
   const user_id = req.user.id;
 
   try {
@@ -102,6 +115,9 @@ export const updatePost = async (req, res) => {
     const updateData = { title, body };
     if (is_draft !== undefined) {
       updateData.is_draft = is_draft;
+    }
+    if (is_private !== undefined) {
+      updateData.is_private = is_private;
     }
     if (labels !== undefined) {
       updateData.labels = labels;
