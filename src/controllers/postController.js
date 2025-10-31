@@ -24,7 +24,7 @@ export const getMyPosts = async (req, res) => {
   try {
     let query = supabase
       .from("posts")
-      .select(`id, title, body, user_id, created_at, updated_at, is_draft`)
+      .select(`id, title, body, user_id, created_at, updated_at, is_draft, labels`)
       .eq("user_id", user_id);
 
     if (drafts_only === 'true') {
@@ -43,18 +43,19 @@ export const getMyPosts = async (req, res) => {
 };
 
 export const createPost = async (req, res) => {
-  const { title, body, is_draft = false } = req.body;
+  const { title, body, is_draft = false, labels = [] } = req.body;
   const user_id = req.user.id;
 
   // Debug logging
-  console.log('📝 Creating post with data:', { title, body, is_draft, user_id });
+  console.log('📝 Creating post with data:', { title, body, is_draft, labels, user_id });
+  console.log('📝 Labels type:', typeof labels, 'Labels length:', labels?.length);
 
   if (!title || !body) {
     return res.status(400).json({ message: "Please provide title and body" });
   }
 
   try {
-    const insertData = { title, body, user_id, is_draft };
+    const insertData = { title, body, user_id, is_draft, labels };
     console.log('📤 Inserting to database:', insertData);
 
     const { data, error } = await supabase
@@ -78,7 +79,7 @@ export const createPost = async (req, res) => {
 
 export const updatePost = async (req, res) => {
   const { id } = req.params;
-  const { title, body, is_draft } = req.body;
+  const { title, body, is_draft, labels } = req.body;
   const user_id = req.user.id;
 
   try {
@@ -101,6 +102,9 @@ export const updatePost = async (req, res) => {
     const updateData = { title, body };
     if (is_draft !== undefined) {
       updateData.is_draft = is_draft;
+    }
+    if (labels !== undefined) {
+      updateData.labels = labels;
     }
 
     const { data, error } = await supabase

@@ -81,6 +81,8 @@ export const login = async (req, res) => {
   }
 };
 
+// Test 
+
 export const getProfile = async (req, res) => {
   try {
     const { data: user, error } = await supabase
