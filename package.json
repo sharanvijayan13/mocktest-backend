@@ -4,7 +4,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run test:api",
+    "test:api": "node tests/api/test_backend_connection.js && node tests/api/test_labels_api.js",
+    "test:drafts": "node tests/api/test_draft_api.js",
+    "test:debug": "node tests/debug/debug_current_state.js",
+    "test:labels": "node tests/api/test_labels_api.js",
+    "test:all": "npm run test:api && npm run test:drafts",
     "start": "node index.js",
     "build": "echo \"No build step required for Node.js backend\""
   },
